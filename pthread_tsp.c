@@ -265,6 +265,40 @@ void Print_digraph(void) {
  *    best_tour
  */
 void* Par_tree_search(void* rank) {
+    long my_rank = (long) rank;
+    city_t nbr;
+    my_stack_t stack; // Search
+    my_stack_t avail;
+    tour_t curr_tour;
+
+    avail = Init_stack();
+    stack = Init_stack();
+
+    Partition_tree(my_rank, stack);
+    while(!Empty_stack(stack)) {
+        curr_tour = Pop(stack);
+        if (City_count(curr_tour) == n) {
+            if(Best_tour(curr_tour)) {
+                Update_best_tour(curr_tour);
+            }
+        } else {
+            for (nbr = n-1; nbr >= 1; nbr--)
+                if (Feasible(curr_tour, nbr)) {
+                    Add_city(curr_tour, nbr);
+                    Push(stack, curr_tour);
+                    Remove_last_city(curr_tour);
+                }
+        }
+    }
+    Free_tour(curr_tour, avail);
+    Free_stack(stack);
+    Free_stack(avail);
+
+    My_barrier(bar_str);
+    if(my_rank == 0) {
+        Free_queue(queue);
+    }
+
     return NULL;
 }  /* Par_tree_search */
 
@@ -283,6 +317,24 @@ void* Par_tree_search(void* rank) {
  *
  */
 void Partition_tree(long my_rank, my_stack_t stack) {
+   int my_first_tour, my_last_tour, i;
+   if (my_rank == 0) {
+       queue_size = Get_upper_bd_queue_sz();
+   }
+    My_barrier(bar_str);
+    if(queue_size == 0) {
+        pthread_exit(NULL);
+    }
+
+    if(my_rank == 0) {
+        Build_initial_queue();
+    }
+
+    My_barrier(bar_str);
+    Set_init_tours(my_rank, &my_first_tour, &my_last_tour);
+    for(i = my_last_tour; i >= my_first_tour; i--) {
+        Push(stack, Queue_elt(queue, i));
+    }
 
 }  /* Partition_tree */
 

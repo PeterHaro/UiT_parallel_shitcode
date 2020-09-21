@@ -1,5 +1,5 @@
 //
-// Created by crono on 9/21/2020.
+// Created by crono on 9/20/2020.
 //
 
 #include <stdio.h>
@@ -260,7 +260,31 @@ void Loop_schedule(int my_rank, int thread_count, int n, int sched,
  *
  */
 void* Thread_work(void* rank) {
+    long my_rank = (long) rank;
+    int step;
+    int part;
+    double t;
+    int first;
+    int last;
+    int incr;
 
+    Loop_schedule(my_rank, thread_count, n, BLOCK, &first, &last, &incr);
+    for(step = 1; step <= n_steps; step++) {
+        t = step * delta_t;
+
+        for(part = first; part < last; part += incr) {
+            Compute_force(part);
+        }
+        Barrier();
+        for(part = first; part < last; part += incr) {
+            Update_part(part);
+        }
+        Barrier();
+#     ifndef NO_OUTPUT
+        if (step % output_freq == 0 && my_rank == 0)
+            Output_state(t);
+#     endif
+    }
     return NULL;
 }  /* Thread_work */
 
